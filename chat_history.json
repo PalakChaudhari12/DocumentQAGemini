@@ -1,0 +1,42 @@
+{
+    "138b6ead-3c7d-4e2a-86e3-499945e4a9b6": [
+        {
+            "query": "give the loss statistics",
+            "answer": "Structures burned: 2019: 963; 2020: 17,904; 2021: 5,972; 2022: 2,717.  Residences burned (as a percentage of structures burned): 2019: 46%; 2020: 54%; 2021: 60%; 2022: 46%."
+        }
+    ],
+    "87eb7fc9-6189-4782-a185-697dc5c050ec": [
+        {
+            "query": "give the loss statistics",
+            "answer": "Loss Statistics:\n\nYear | Structures Burned | % Residences\n---|---|---| \n2019 | 963 | 46%\n2020 | 17,904 | 54%\n2021 | 5,972 | 60%\n2022 | 2,717 | 46%"
+        }
+    ],
+    "4309fe5f-a256-4549-b171-8db52fea3296": [
+        {
+            "query": "Give the loss statistics",
+            "answer": "The provided text mentions loss statistics categories (acres burned or impacted, lives lost, and structures destroyed) and gives an example statistic for 2022 (over 2,700 structures burned).  However, the table with the actual data is missing."
+        }
+    ],
+    "6bd5f583-d1f1-4d9c-bb9f-5a9e05d4518b": [
+        {
+            "query": "Give the loss statistics",
+            "answer": "The provided text mentions loss statistics categories (acres burned or impacted, lives lost, and structures destroyed) and gives an example statistic for 2022 (over 2,700 structures burned).  However, the table with the actual data is empty.  Therefore, no specific loss statistics can be provided."
+        }
+    ],
+    "7d0507fb-ebc0-474b-a3d1-f6795b79ae33": [
+        {
+            "query": "Give the loss statistics",
+            "answer": "The provided text mentions \"Loss Statistics\" and the years 2019, 2020, 2021, and 2022, but the actual data for the table is missing.  The text states that over 2,700 structures were burned in wildfires in 2022, mostly in California.  It also mentions that loss statistics can include acres burned/impacted and lives lost (firefighters and civilians), but doesn't provide specific numbers for these categories."
+        }
+    ],
+    "15ad4155-c739-45d2-9b9c-9ff33c253c83": [
+        {
+            "query": "Give the loss statistics",
+            "answer": "The provided text mentions loss statistics categories (acres burned or impacted, lives lost, and structures destroyed) and gives an example (over 2,700 structures burned in 2022), but the table with the actual data is missing.  Therefore, I cannot provide the loss statistics."
+        },
+        {
+            "query": "What are the impacts of wildfires?",
+            "answer": "Wildfires can become conflagrations, impacting large areas.  From 2018-2022, there was an average of 1,041 large/significant fires annually. In 2022, 2% of wildfires (1,289) were large/significant; 45 burned over 40,000 acres, and 17 burned over 100,000 acres.  Predicting which fires will become conflagrations is challenging and depends on factors like weather and geography."
+        }
+    ]
+}

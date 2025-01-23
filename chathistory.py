@@ -11,7 +11,7 @@ from langchain.schema import HumanMessage, SystemMessage
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 import pdfplumber
 import fitz  # PyMuPDF
-import time
+import shutil
 
 warnings.filterwarnings("ignore")
 
@@ -187,7 +187,9 @@ class QueryHandler:
                     page_number = doc.metadata.get('page', None)
                     if page_number is not None:
                         self.highlight_text_in_pdf(page_number + 1, doc.page_content)
-                        citations.append({"page": page_number + 1, "citation": f"From {self.pdf_name}, Page {page_number + 1}"})
+                        file_name = os.path.basename(self.pdf_name)  # Extract only the file name
+                        citations.append({"page": page_number + 1, "citation": f"From {file_name}, Page {page_number + 1}"})
+                        #citations.append({"page": page_number + 1, "citation": f"From {self.pdf_name}, Page {page_number + 1}"})
 
                 if not citations:
                     citations.append({"page": None, "citation": "Source page information not available"})
@@ -200,80 +202,75 @@ class QueryHandler:
             return {"query": query, "answer": "Error in generating answer. Please check the API key, model access, and prompt clarity.", "citations": []}
 
 
-class Main:
-    def __init__(self):
-        self.query_handler = None
-
-    async def on_chat_start(self):
-        files = None
-        while files is None:
-            files = await cl.AskFileMessage(
-                content="Please upload a PDF file to begin!",
-                accept=["application/pdf"],
-                max_size_mb=20,
-                timeout=180,
-            ).send()
-
-        file = files[0]
-        msg = cl.Message(content=f"Processing `{file.name}`...")
-        await msg.send()
-
-        pdf_processor = PDFProcessor(file.path)
-        pdf_processor.extract_visuals_and_tables()
-        pdf_processor.process_documents()
-        retriever = pdf_processor.get_retriever()
-
-        self.query_handler = QueryHandler(retriever, pdf_processor.tables, pdf_name=file.name)
-
-        cl.user_session.set("query_handler", self.query_handler)
-        msg.content = f"Processing `{file.name}` done. You can now ask questions!"
-        await msg.update()
-
-    async def main(self, message: cl.Message):
-        if not self.query_handler:
-            await cl.Message(content="Please upload a PDF first.").send()
-            return
-
-        response = await self.query_handler.generate_answer(message.content)
-        answer = response["answer"]
-        citations = response["citations"]
-
-        unique_citations = {}
-        for citation in citations:
-            page = citation["page"]
-            if page not in unique_citations:
-                unique_citations[page] = citation
-
-        citation_texts = "\n\nCitations:\n" + "\n".join([c["citation"] for c in unique_citations.values()])
-
-        elements = []
-        for citation in unique_citations.values():
-            if citation["page"] is not None:
-                elements.append(cl.Pdf(
-                    name=f"{self.query_handler.pdf_name}",
-                    display="side",
-                    path=self.query_handler.pdf_name,
-                    page=citation["page"] - 1,
-                    link_text=f"View {self.query_handler.pdf_name}, Page {citation['page']}"
-                ))
-
-        chat_history_file = cl.File(
-            path="chat_history.json",
-            name="chat_history.json",
-            description="Download the chat history",
-            content_type="application/json",
-        )
-        elements.append(chat_history_file)
-
-        await cl.Message(content=f"{answer}{citation_texts}", elements=elements).send()
-
-# Instantiate and register event handlers for Chainlit
-main_app = Main()
-
 @cl.on_chat_start
 async def on_chat_start():
-    await main_app.on_chat_start()
+    files = None
+    while files is None:
+        files = await cl.AskFileMessage(
+            content="Please upload a PDF file to begin!",
+            accept=["application/pdf"],
+            max_size_mb=20,
+            timeout=180,
+        ).send()
+
+    file = files[0]
+    msg = cl.Message(content=f"Processing `{file.name}`...")
+    await msg.send()
+
+    # Move the uploaded file to a static folder
+    static_dir = "static"  # Ensure this directory exists and is served by Chainlit
+    os.makedirs(static_dir, exist_ok=True)
+    public_file_path = os.path.join(static_dir, file.name)
+    shutil.copy(file.path, public_file_path)
+
+    # Initialize the PDF processor with the public file path
+    pdf_processor = PDFProcessor(public_file_path)
+    pdf_processor.extract_visuals_and_tables()
+    pdf_processor.process_documents()
+    retriever = pdf_processor.get_retriever()
+
+    query_handler = QueryHandler(retriever, pdf_processor.tables, pdf_name=public_file_path)
+
+    cl.user_session.set("query_handler", query_handler)
+    msg.content = f"Processing `{file.name}` done. You can now ask questions!"
+    await msg.update()
 
 @cl.on_message
 async def main(message: cl.Message):
-    await main_app.main(message)
+    query_handler = cl.user_session.get("query_handler")
+    response = await query_handler.generate_answer(message.content)
+    answer = response["answer"]
+    citations = response["citations"]
+    file_name = os.path.basename(query_handler.pdf_name)
+
+    unique_citations = {}
+    for citation in citations:
+        page = citation["page"]
+        if page not in unique_citations:
+            unique_citations[page] = citation
+
+    citation_texts = "\n\nCitations:\n" + "\n".join([c["citation"] for c in unique_citations.values()])
+
+    elements = []
+    for citation in unique_citations.values():
+        if citation["page"] is not None:
+            elements.append(cl.Pdf(
+                name=f"{file_name}",
+                display="side",
+                path=query_handler.pdf_name,  # Use the public file path
+                page=citation["page"] - 1,    # Zero-indexed for PyMuPDF
+                link_text=f"View {file_name}, Page {citation['page']}"
+            ))
+
+    # Add a button to download the chat history JSON file
+
+    chat_history_file = cl.File(
+        path="chat_history.json",
+        name="chat_history.json",
+        description="Download the chat history",
+        content_type="application/json",
+    )
+    elements.append(chat_history_file)
+
+
+    await cl.Message(content=f"{answer}{citation_texts}", elements=elements).send()
